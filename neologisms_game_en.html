@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neologisms — Word Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0e17;
+      --surface: #1a1928;
+      --surface2: #242338;
+      --border: rgba(255,255,255,0.08);
+      --text: #f0eff7;
+      --muted: rgba(240,239,247,0.5);
+      --accent: #7f6df2;
+      --accent-dim: rgba(127,109,242,0.15);
+      --green: #2ecc8a;
+      --green-dim: rgba(46,204,138,0.12);
+      --red: #e8475f;
+      --red-dim: rgba(232,71,95,0.12);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 20%, rgba(127,109,242,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(46,204,138,0.06) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .logo {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .start-wrap { text-align: center; }
+
+    .start-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(28px, 6vw, 42px);
+      font-weight: 600;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #f0eff7 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .start-sub {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 2.5rem;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .start-pills {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+
+    .pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 16px 40px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 24px rgba(127,109,242,0.35);
+    }
+
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(127,109,242,0.45); }
+    .btn-primary:active { transform: scale(0.97); }
+
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 13px 32px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      margin-top: 12px;
+    }
+    .btn-ghost:hover { background: var(--surface2); border-color: rgba(255,255,255,0.15); }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .q-counter { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+    .score-badge {
+      background: var(--accent-dim);
+      border: 1px solid rgba(127,109,242,0.3);
+      border-radius: 100px;
+      padding: 4px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 4px;
+      margin-bottom: 1.75rem;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #a78cfa);
+      border-radius: 4px;
+      transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .word-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 1.75rem;
+      margin-bottom: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .word-card::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 120px; height: 120px;
+      background: radial-gradient(circle, rgba(127,109,242,0.1), transparent 70%);
+      pointer-events: none;
+    }
+
+    .word-tag {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .word-main {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(22px, 5vw, 32px);
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+    }
+
+    .word-example {
+      font-size: 13px;
+      color: var(--muted);
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
+
+    .opt {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 15px 18px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      line-height: 1.5;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+
+    .opt:not(:disabled):hover {
+      background: var(--surface2);
+      border-color: rgba(255,255,255,0.18);
+      transform: translateX(4px);
+    }
+
+    .opt:disabled { cursor: default; transform: none !important; }
+    .opt.correct { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+    .opt.wrong   { background: var(--red-dim);   border-color: var(--red);   color: var(--red); }
+
+    .feedback {
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.55;
+      display: none;
+      margin-bottom: 1rem;
+    }
+
+    .feedback.good { background: var(--green-dim); color: var(--green); border: 1px solid rgba(46,204,138,0.25); }
+    .feedback.bad  { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(232,71,95,0.25); }
+
+    .btn-next { width: 100%; display: none; }
+
+    .result-wrap { text-align: center; }
+
+    .result-icon { font-size: 56px; margin-bottom: 1rem; display: block; }
+
+    .result-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .result-sub {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 2rem;
+      max-width: 360px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .score-display {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .score-big {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 52px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #f0eff7, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .score-label { font-size: 13px; color: var(--muted); }
+
+    .answer-dots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .adot { width: 12px; height: 12px; border-radius: 50%; }
+    .adot.ok { background: var(--green); }
+    .adot.no { background: var(--red); }
+
+    .result-btns { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- START -->
+  <div id="screen-start" class="screen active">
+    <div class="start-wrap">
+      <div class="logo">Aitbosunov Atai</div>
+      <h1 class="start-title">Neologisms</h1>
+      <p class="start-sub">Guess the meaning of modern slang and new words. 10 questions, 4 choices — only one is correct.</p>
+      <div class="start-pills">
+        <span class="pill">10 questions</span>
+        <span class="pill">4 options each</span>
+        <span class="pill">15 words in pool</span>
+      </div>
+      <button class="btn-primary" onclick="startGame()">Start Game</button>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div id="screen-game" class="screen">
+    <div class="top-bar">
+      <div class="q-counter" id="q-counter">Question 1 / 10</div>
+      <div class="score-badge" id="score-badge">0 ✓</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+
+    <div class="word-card">
+      <div class="word-tag" id="word-pos">noun</div>
+      <div class="word-main" id="word-main">Doomscrolling</div>
+      <div class="word-example" id="word-example"></div>
+    </div>
+
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="btn-primary btn-next" id="btn-next" onclick="nextQ()">Next Question →</button>
+  </div>
+
+  <!-- RESULT -->
+  <div id="screen-result" class="screen">
+    <div class="result-wrap">
+      <span class="result-icon" id="res-icon">🏆</span>
+      <div class="result-title" id="res-title">Neologism Expert!</div>
+      <p class="result-sub" id="res-sub"></p>
+      <div class="score-display">
+        <div class="score-big" id="res-score">9/10</div>
+        <div class="score-label">correct answers</div>
+        <div class="answer-dots" id="res-dots"></div>
+      </div>
+      <div class="result-btns">
+        <button class="btn-primary" onclick="startGame()">Play Again</button>
+        <button class="btn-ghost" onclick="showScreen('screen-start')">Home</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const WORDS = [
+  { word:"Doomscrolling", pos:"noun", example:"\"I spent two hours doomscrolling before I finally put my phone down.\"", correct:"Endlessly scrolling through negative or distressing news online", wrong:["Browsing travel sites for a vacation","A speed-reading technique for long articles","Checking weather forecasts obsessively"] },
+  { word:"Flex", pos:"verb", example:"\"He's always flexing his new car in front of everyone.\"", correct:"To show off or boast about possessions or achievements", wrong:["To avoid giving a straight answer","To work a rotating shift","To change plans at the last minute"] },
+  { word:"Situationship", pos:"noun", example:"\"We've been in a situationship for months — not dating, not just friends.\"", correct:"A romantic connection without a clear label or commitment", wrong:["A temporary work arrangement","A dispute between roommates","A casual friendship with no romance"] },
+  { word:"Vibe", pos:"noun", example:"\"This café has such a cozy vibe.\"", correct:"The atmosphere, mood, or feeling given off by a person or place", wrong:["A genre of electronic dance music","Vibration from a running engine","A style of meditation"] },
+  { word:"Slay", pos:"verb", example:"\"She absolutely slayed that presentation.\"", correct:"To perform brilliantly or look incredibly impressive", wrong:["To defeat someone in a video game","To cut through something sharply","To speak harshly to a colleague"] },
+  { word:"Hype", pos:"noun", example:"\"There's so much hype around that new movie.\"", correct:"Intense excitement or buzz, often spread rapidly online", wrong:["A personal hobby kept to oneself","A brand's advertising tagline","A genre of music video"] },
+  { word:"Gatekeep", pos:"verb", example:"\"Stop gatekeeping your skincare routine — share the secrets!\"", correct:"To withhold information or access to keep something exclusive", wrong:["To guard a physical entrance","To moderate online comments","To copyright original content"] },
+  { word:"Cringe", pos:"noun / adjective", example:"\"That speech was pure cringe.\"", correct:"A feeling of embarrassment or awkwardness caused by someone else's behavior", wrong:["A harsh critical review","A horror film subgenre","A cold or distant personality"] },
+  { word:"Boomer", pos:"noun", example:"\"He's such a boomer — he still prints out emails.\"", correct:"An older person perceived as out of touch with modern culture", wrong:["A loudspeaker or portable speaker","Someone who suddenly gets rich","A lover of physical books"] },
+  { word:"Zoomer", pos:"noun", example:"\"Zoomers can't imagine life without a smartphone.\"", correct:"A member of Generation Z, born roughly 1997–2012", wrong:["A professional photographer","A frequent video-call user","Someone who lives in a big city"] },
+  { word:"Toxic", pos:"adjective", example:"\"That work environment was completely toxic.\"", correct:"Describing behavior or relationships that are harmful and draining", wrong:["Containing dangerous chemicals","Related to industrial pollution","Overly cautious about health"] },
+  { word:"Cancel culture", pos:"noun", example:"\"The comedian became a target of cancel culture after the old tweet surfaced.\"", correct:"The practice of withdrawing support from public figures who have done something offensive", wrong:["A policy of deleting old social media posts","A trend of unsubscribing from streaming services","The act of ending a TV show early"] },
+  { word:"Procrastinate", pos:"verb", example:"\"I've been procrastinating for three hours instead of working.\"", correct:"To delay or postpone tasks despite knowing they are important", wrong:["To multitask across several projects","To plan tasks well in advance","To sleep later than usual"] },
+  { word:"Ghosting", pos:"noun", example:"\"After three dates, he just started ghosting her.\"", correct:"Suddenly cutting off all contact with someone without explanation", wrong:["Appearing in disguise at a party","Editing yourself out of group photos","Secretly following someone on social media"] },
+  { word:"Lowkey", pos:"adverb / adjective", example:"\"I'm lowkey obsessed with that show.\"", correct:"Mildly or secretly; understated enthusiasm kept quiet", wrong:["Completely open and enthusiastic","Speaking in a very quiet voice","Having very few keys on a keyboard"] },
+];
+
+let questions=[], cur=0, score=0, answered=[];
+
+function shuffle(a){ return [...a].sort(()=>Math.random()-0.5); }
+
+function startGame(){
+  questions = shuffle(WORDS).slice(0,10);
+  cur=0; score=0; answered=[];
+  showScreen('screen-game');
+  render();
+}
+
+function render(){
+  const q = questions[cur];
+  document.getElementById('q-counter').textContent = `Question ${cur+1} / ${questions.length}`;
+  document.getElementById('score-badge').textContent = `${score} ✓`;
+  document.getElementById('prog-fill').style.width = (cur/questions.length*100)+'%';
+  document.getElementById('word-pos').textContent = q.pos;
+  document.getElementById('word-main').textContent = q.word;
+  document.getElementById('word-example').textContent = q.example;
+
+  const opts = shuffle([q.correct, ...q.wrong]);
+  const container = document.getElementById('options');
+  container.innerHTML = '';
+  opts.forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = o;
+    b.onclick = () => pick(b, o, q.correct);
+    container.appendChild(b);
+  });
+
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('btn-next').style.display = 'none';
+}
+
+function pick(btn, chosen, correct){
+  document.querySelectorAll('.opt').forEach(b => {
+    b.disabled = true;
+    if(b.textContent === correct) b.classList.add('correct');
+  });
+  const ok = chosen === correct;
+  if(!ok) btn.classList.add('wrong'); else score++;
+  answered.push(ok);
+
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback ' + (ok ? 'good' : 'bad');
+  fb.textContent = ok ? '✓ Correct!' : `✗ Right answer: "${correct}"`;
+  fb.style.display = 'block';
+  document.getElementById('btn-next').style.display = 'block';
+  document.getElementById('score-badge').textContent = `${score} ✓`;
+}
+
+function nextQ(){
+  cur++;
+  if(cur >= questions.length) showResult();
+  else render();
+}
+
+function showResult(){
+  showScreen('screen-result');
+  const pct = score/questions.length;
+  let icon, title, sub;
+  if(pct >= 0.9){ icon='🏆'; title='Neologism Expert!'; sub='Outstanding! You have a sharp grasp of modern language.'; }
+  else if(pct >= 0.7){ icon='🎯'; title='Almost an Expert!'; sub='Great result. A few words slipped by — easy to fix with another round.'; }
+  else if(pct >= 0.5){ icon='📖'; title='Not Bad!'; sub='Solid start. Language evolves fast — play again to sharpen your skills.'; }
+  else { icon='🌱'; title='Room to Grow'; sub="Don't worry — neologisms are tricky. Give it another shot!"; }
+
+  document.getElementById('res-icon').textContent = icon;
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-sub').textContent = sub;
+  document.getElementById('res-score').textContent = `${score}/${questions.length}`;
+
+  const dots = document.getElementById('res-dots');
+  dots.innerHTML = '';
+  answered.forEach(ok => {
+    const d = document.createElement('div');
+    d.className = 'adot ' + (ok ? 'ok' : 'no');
+    dots.appendChild(d);
+  });
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+</script>
+
+</body>
+</html>
